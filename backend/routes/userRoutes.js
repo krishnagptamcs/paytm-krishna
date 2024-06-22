@@ -1,6 +1,7 @@
 const express = require("express");
 const zod = require("zod");
-const User = require("../schema/user");
+const User = require("../schema/user"); //schema's
+const Account = require("../schema/bank"); //schema's
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config");
 const { authMiddleware } = require("../middleware");
@@ -20,9 +21,11 @@ router.post("/signup", async (req, res) => {
   const body = req.body;
 
   const { success } = signupSchema.safeParse(body);
+  s;
 
   if (!success) {
     return res.status(411).json({
+      success: false,
       message: "Invalid Input",
     });
   }
@@ -33,11 +36,23 @@ router.post("/signup", async (req, res) => {
 
   if (user._id) {
     return res.status(411).json({
+      sucess: false,
       message: "Email Already exsist , Pls use diffrent email address",
     });
   }
 
   const dbUser = await User.create(body);
+  // After creating the entry inn db of user ,
+  // create an account of it
+
+  //--- Creating a new Accoount for user and initlising the balance----//
+
+  await Account.create({
+    userId: dbUser._id,
+    balance: 1 + Math.random() * 10000,
+  });
+
+  //---------//
   const token = jwt.sign(
     {
       userId: dbUser._id,
@@ -46,6 +61,7 @@ router.post("/signup", async (req, res) => {
   );
 
   res.json({
+    success: true,
     message: "User created successfully",
     token: token,
   });
@@ -147,6 +163,7 @@ router.get("/bulk", async (req, res) => {
 
   //after gettign the row list , iterate through it and return to the user
   return res.status(200).json({
+    sucess: true,
     user: users.map((item) => ({
       username: item.username,
       firstName: item.firstName,
